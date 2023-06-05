@@ -1,0 +1,21 @@
+cronjobs:
+  file-interaction:
+    scriptPath: api/file-interaction.js
+    schedule: 0 8 * * *
+    port: 5656
+    serviceName: file-interaction
+    image: ghcr.io/hpi-schul-cloud/k6-loadtest:latest
+    env:
+      ENVIRONMENT: https://infra-nextcloud-default.dbildungscloud.dev
+      OPTIONS_FILE: 900s1000u.json
+      BRANCH: main
+    secretEnv:
+      TEST_USERS:
+        name: test-user-data
+        key: available
+      TEST_USER_PREFIX:
+        name: test-user-data
+        key: prefix
+      TEST_USER_SALT:
+        name: test-user-data
+        key: salt

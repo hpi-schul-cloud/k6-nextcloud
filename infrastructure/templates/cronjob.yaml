@@ -1,0 +1,57 @@
+{{- range $job_name, $job_options := .Values.cronjobs }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: loadtest-{{ $job_name }}
+spec:
+  schedule: {{ $job_options.schedule }}
+  suspend: true
+  jobTemplate:
+    spec:
+      completions: {{ $job_options.jobsParallelism }}
+      parallelism: {{ $job_options.jobsParallelism }}
+      template:
+        metadata:
+          labels:
+            test: loadtest-{{ $job_options.serviceName }}
+            pod: {{ $job_name }}
+        spec:
+          containers:
+          - name: {{ $job_name }}
+            image: {{ $job_options.image }}
+            imagePullPolicy: Always
+            env:
+              - name: SECRET_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: vminsert-credentials
+                    key: username
+              - name: SECRET_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: vminsert-credentials
+                    key: password
+            {{- range $key, $value := $job_options.env }}
+              - name: "{{ $key }}"
+                value: "{{ $value }}"
+              {{- end }} 
+            {{- if $job_options.secretEnv }}
+              {{- range $key, $value := $job_options.secretEnv }}
+              - name: "{{ $key }}"
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ $value.name }}"
+                    key: "{{ $value.key }}"
+              {{- end }} 
+            {{- end }}
+            args:
+              ['run', '-u', '0',
+                         './loadtest/tests/{{ $job_options.scriptPath }}',
+                         '--tag','NAME={{ $job_options.serviceName }}',
+                         '--out', 'experimental-prometheus-rw' ]
+            ports:
+            - containerPort: {{ $job_options.port }}
+              name: loadtest-pod
+          restartPolicy: OnFailure
+---
+{{- end}}
