@@ -1,0 +1,4 @@
+apiVersion: v1
+name: k6-nextcloud
+description: A Helm chart for distributed k6 loadtests in kubernetes.
+version: 1.0.0
